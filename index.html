@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rube Goldberg Builder</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <main>
+      <header class="game-heading">
+        <h1>Rube Goldberg Builder</h1>
+        <h2 id="level-name"></h2>
+        <p id="level-goal"></p>
+      </header>
+      <p class="instructions">Choose a part, click or drag to place it, then arrange it on the board. Press R to rotate or Delete to remove a selected part.</p>
+      <section class="game-controls" aria-label="Game controls">
+        <div class="part-toolbar" id="part-toolbar" aria-label="Part toolbar">
+          <button type="button" draggable="true" data-part-type="ramp" aria-pressed="true">Ramp</button>
+          <button type="button" draggable="true" data-part-type="domino" aria-pressed="false">Domino</button>
+          <button type="button" draggable="true" data-part-type="seesaw" aria-pressed="false">Seesaw</button>
+        </div>
+        <div class="mode-controls" aria-label="Simulation controls">
+          <span id="mode-label" role="status">Edit mode</span>
+          <button id="edit-button" type="button" aria-pressed="true" disabled>Edit</button>
+          <button id="play-button" type="button" aria-pressed="false">Play</button>
+          <button id="pause-button" type="button" aria-pressed="false" disabled>Pause</button>
+          <button id="reset-button" type="button" disabled>Reset</button>
+          <button id="next-level-button" type="button" disabled>Next level</button>
+        </div>
+      </section>
+      <p class="inventory-status" id="inventory-status" aria-live="polite"></p>
+      <p class="layout-status" id="layout-status" aria-live="polite"></p>
+      <p class="game-message" id="game-message" role="status" aria-live="polite"></p>
+      <canvas id="game-canvas" width="960" height="540" aria-label="Physics puzzle build area"></canvas>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

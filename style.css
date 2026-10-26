@@ -1,0 +1,178 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #111827;
+  color: #f9fafb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+}
+
+main {
+  width: min(100%, 1040px);
+  padding: clamp(0.75rem, 2.5vw, 1.5rem);
+  text-align: center;
+}
+
+.game-heading {
+  margin-bottom: 1rem;
+}
+
+h1 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+}
+
+h2 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.game-heading p,
+.instructions {
+  margin: 0 auto 0.75rem;
+  color: #cbd5e1;
+}
+
+.instructions {
+  max-width: 50rem;
+  font-size: 0.9rem;
+}
+
+.game-controls {
+  width: min(100%, 960px);
+  margin: 0 auto 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.part-toolbar,
+.mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #475569;
+  border-radius: 0.375rem;
+  background: #1f2937;
+  color: #f9fafb;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #334155;
+}
+
+button.is-active,
+button[aria-pressed="true"] {
+  border-color: #38bdf8;
+  background: #075985;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+#mode-label {
+  min-width: 5.5rem;
+  color: #cbd5e1;
+  text-align: left;
+}
+
+#reset-button {
+  border-color: #b45309;
+}
+
+.layout-status {
+  width: min(100%, 960px);
+  min-height: 1.25rem;
+  margin: 0 auto 0.4rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.inventory-status,
+.game-message {
+  width: min(100%, 960px);
+  min-height: 1.25rem;
+  margin: 0 auto 0.5rem;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.inventory-status {
+  color: #cbd5e1;
+}
+
+.game-message {
+  color: #86efac;
+  font-weight: 600;
+}
+
+canvas {
+  display: block;
+  width: min(100%, 960px, calc((100vh - 12rem) * 16 / 9));
+  height: auto;
+  margin: 0 auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 1px #475569, 0 1rem 2.5rem #02061755;
+  background: #e2e8f0;
+  touch-action: manipulation;
+  cursor: grab;
+}
+
+#part-toolbar[data-mode="play"] button,
+#part-toolbar[data-mode="paused"] button {
+  cursor: not-allowed;
+}
+
+canvas:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 0.75rem;
+  }
+
+  .game-heading {
+    margin-bottom: 0.75rem;
+  }
+
+  .game-controls {
+    justify-content: center;
+  }
+
+  .part-toolbar,
+  .mode-controls {
+    justify-content: center;
+  }
+
+  .layout-status {
+    text-align: center;
+  }
+
+  .inventory-status,
+  .game-message {
+    text-align: center;
+  }
+}
