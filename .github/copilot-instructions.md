@@ -16,3 +16,5 @@ making changes.
 - Use a fixed physics timestep
 - Small functions, with comments explaining physics choices
 - After writing code, explain what it does and where it could break
+
+For v1.1 work, also read docs/V1_1_PLAN.md and do one phase at a time.
