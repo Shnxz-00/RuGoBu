@@ -86,7 +86,7 @@ Build: stuck detection (10 s of low speed shows "Try again"), simple UI cleanup,
 **Done when:**
 
 - [x] Stuck state is detected and handled
-- [ ] The live link works from another device
+- [x] The live link works from another device
 - [x] README explains the physics in a short section
 
 ## Definition of done (whole MVP)
