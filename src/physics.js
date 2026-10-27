@@ -1,10 +1,9 @@
-export const WORLD_WIDTH = 960;
-export const WORLD_HEIGHT = 540;
-
 const { Body, Composite, Engine, Events } = window.Matter ?? {};
 
 if (!Body || !Composite || !Engine || !Events) {
-  throw new Error("Matter.js did not load. Check the CDN connection and reload.");
+  throw new Error(
+    "Matter.js did not load. Check that vendor/matter.min.js is present and loaded before the game modules.",
+  );
 }
 
 export function createPhysicsWorld() {

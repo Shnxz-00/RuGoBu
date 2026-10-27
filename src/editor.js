@@ -94,7 +94,7 @@ export function createEditor({
     editButton.disabled = mode === "edit" || mode === "won" || mode === "stuck";
     playButton.disabled = mode === "play" || mode === "won" || mode === "stuck";
     pauseButton.disabled = mode !== "play";
-    resetButton.disabled = mode === "edit" || playSnapshot === null;
+    resetButton.disabled = playSnapshot === null;
     onModeChange(mode);
   }
 
@@ -229,7 +229,11 @@ export function createEditor({
     const hitIndex = bodies.indexOf(hit);
 
     if (hitIndex >= 0) {
-      startDragging(hitIndex, point, event.pointerId);
+      if (layout[hitIndex].fixed) {
+        select(-1);
+      } else {
+        startDragging(hitIndex, point, event.pointerId);
+      }
       return;
     }
 
@@ -296,12 +300,11 @@ export function createEditor({
     if (mode !== "edit") {
       stopBodies(engine);
       syncLayoutFromBodies();
-      playSnapshot = null;
       updateMode("edit");
     }
   });
   resetButton.addEventListener("click", () => {
-    if (mode === "edit" || playSnapshot === null) {
+    if (playSnapshot === null) {
       return;
     }
     const restoreLayout = cloneLayout(playSnapshot);

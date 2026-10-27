@@ -1,21 +1,21 @@
 import { createEditor } from "./editor.js";
-import { LEVELS, createLevelLayout } from "./levels.js";
+import {
+  FIXED_TIME_STEP_MS,
+  MAX_ACCUMULATED_TIME_MS,
+  MAX_STUCK_ANGULAR_SPEED,
+  MAX_STUCK_SPEED,
+  STUCK_TIME_MS,
+  WORLD_HEIGHT,
+  WORLD_WIDTH,
+} from "./config.js";
+import { LEVELS, createLevelLayout, createLevelSolution } from "./levels.js";
 import {
   advancePhysics,
   createPhysicsWorld,
   getBodies,
   getConstraints,
   onBallTargetCollision,
-  WORLD_HEIGHT,
-  WORLD_WIDTH,
 } from "./physics.js";
-
-const FIXED_TIME_STEP_MS = 1000 / 60;
-const MAX_ACCUMULATED_TIME_MS = 100;
-const STUCK_TIME_MS = 10_000;
-// Ignore tiny solver jitter so a settled body still counts as stopped.
-const MAX_STUCK_SPEED = 0.15;
-const MAX_STUCK_ANGULAR_SPEED = 0.015;
 
 const canvas = document.querySelector("#game-canvas");
 const modeLabel = document.querySelector("#mode-label");
@@ -47,6 +47,9 @@ if (
   throw new Error("The game canvas or controls could not be found.");
 }
 
+canvas.width = WORLD_WIDTH;
+canvas.height = WORLD_HEIGHT;
+
 const context = canvas.getContext("2d");
 if (!context) {
   throw new Error("A 2D canvas context is not available.");
@@ -59,10 +62,60 @@ let selectedBody = null;
 let previousFrameTime;
 let accumulatedTimeMs = 0;
 let stuckTimeMs = 0;
+const BEST_STARS_STORAGE_KEY = "rugobu-best-stars-v1";
+
+function readBestStars() {
+  try {
+    const savedScores = window.localStorage.getItem(BEST_STARS_STORAGE_KEY);
+    if (!savedScores) {
+      return {};
+    }
+
+    const parsedScores = JSON.parse(savedScores);
+    if (!parsedScores || typeof parsedScores !== "object" || Array.isArray(parsedScores)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedScores).filter(([, stars]) => (
+        Number.isInteger(stars) && stars >= 1 && stars <= 3
+      )),
+    );
+  } catch (error) {
+    console.warn("Could not load saved level stars; continuing without saved scores.", error);
+    return {};
+  }
+}
+
+let bestStarsByLevel = readBestStars();
+
+function saveBestStars() {
+  try {
+    window.localStorage.setItem(BEST_STARS_STORAGE_KEY, JSON.stringify(bestStarsByLevel));
+  } catch (error) {
+    console.warn("Could not save level stars; the game will continue without persistence.", error);
+  }
+}
+
+function formatStars(stars) {
+  return `${"★".repeat(stars)}${"☆".repeat(3 - stars)}`;
+}
+
+function scoreStars(partsUsed, par) {
+  if (partsUsed <= par) {
+    return 3;
+  }
+  if (partsUsed <= par + 2) {
+    return 2;
+  }
+  return 1;
+}
 
 function updateLevelHeading() {
   const level = LEVELS[levelIndex];
-  levelName.textContent = `Level ${level.id}: ${level.name}`;
+  const bestStars = bestStarsByLevel[level.id];
+  const bestLabel = bestStars ? ` | Best: ${formatStars(bestStars)}` : " | Best: —";
+  levelName.textContent = `Level ${level.id}: ${level.name}${bestLabel}`;
   levelGoal.textContent = level.goal;
 }
 
@@ -157,10 +210,24 @@ function completeLevel() {
   if (editor.getMode() !== "play") {
     return;
   }
+  const partsUsed = layout.filter((part) => !part.fixed).length;
+  const earnedStars = scoreStars(partsUsed, LEVELS[levelIndex].par);
+  const previousBest = bestStarsByLevel[LEVELS[levelIndex].id] ?? 0;
+  if (earnedStars > previousBest) {
+    bestStarsByLevel = {
+      ...bestStarsByLevel,
+      [LEVELS[levelIndex].id]: earnedStars,
+    };
+    saveBestStars();
+    updateLevelHeading();
+  }
+
   editor.setWon();
-  gameMessage.textContent = levelIndex < LEVELS.length - 1
+  const completionMessage = levelIndex < LEVELS.length - 1
     ? "You did it! The ball reached the target. Continue to the next level."
-    : "You did it! You completed all three levels.";
+    : `You did it! You completed all ${LEVELS.length} levels.`;
+  const earnedStarLabel = `${formatStars(earnedStars)} (${earnedStars} ${earnedStars === 1 ? "star" : "stars"})`;
+  gameMessage.textContent = `${completionMessage} You earned ${earnedStarLabel}.`;
 }
 
 function endRun(message) {
@@ -211,6 +278,19 @@ function loadNextLevel() {
   updateLevelHeading();
   editor.loadLevel(createLevelLayout(LEVELS[levelIndex]), LEVELS[levelIndex].inventory);
 }
+
+window.addEventListener("keydown", (event) => {
+  if (event.code !== "KeyL" || editor.getMode() !== "edit") {
+    return;
+  }
+  const level = LEVELS[levelIndex];
+  if (!level.solution) {
+    return;
+  }
+  event.preventDefault();
+  editor.loadLevel(createLevelSolution(level), level.inventory);
+  gameMessage.textContent = `Loaded the test solution for Level ${level.id}. Press Play to run it.`;
+});
 
 nextLevelButton.addEventListener("click", loadNextLevel);
 onBallTargetCollision(engine, completeLevel);

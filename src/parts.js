@@ -1,7 +1,9 @@
 const { Bodies, Constraint } = window.Matter ?? {};
 
 if (!Bodies || !Constraint) {
-  throw new Error("Matter.js did not load. Check the CDN connection and reload.");
+  throw new Error(
+    "Matter.js did not load. Check that vendor/matter.min.js is present and loaded before the game modules.",
+  );
 }
 
 export function createBall(x, y, angle) {

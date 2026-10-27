@@ -13,7 +13,7 @@
         <h2 id="level-name"></h2>
         <p id="level-goal"></p>
       </header>
-      <p class="instructions">Choose a part, click or drag to place it, then arrange it on the board. Press R to rotate or Delete to remove a selected part.</p>
+      <p class="instructions">Choose a part, click or drag to place it, then arrange it on the board. Press R to rotate or Delete to remove a selected part. On levels 4-6, press L to load the test solution.</p>
       <section class="game-controls" aria-label="Game controls">
         <div class="part-toolbar" id="part-toolbar" aria-label="Part toolbar">
           <button type="button" draggable="true" data-part-type="ramp" aria-pressed="true">Ramp</button>
@@ -32,9 +32,9 @@
       <p class="inventory-status" id="inventory-status" aria-live="polite"></p>
       <p class="layout-status" id="layout-status" aria-live="polite"></p>
       <p class="game-message" id="game-message" role="status" aria-live="polite"></p>
-      <canvas id="game-canvas" width="960" height="540" aria-label="Physics puzzle build area"></canvas>
+      <canvas id="game-canvas" aria-label="Physics puzzle build area"></canvas>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+    <script src="./vendor/matter.min.js"></script>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
