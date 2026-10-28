@@ -33,6 +33,7 @@ jobs:
           mkdir site
           cp index.html style.css site/
           cp -R src site/src
+          cp -R assets site/assets
           cp -R vendor site/vendor
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3

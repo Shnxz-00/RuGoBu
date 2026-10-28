@@ -9,30 +9,135 @@
   <body>
     <main>
       <header class="game-heading">
-        <h1>Rube Goldberg Builder</h1>
-        <h2 id="level-name"></h2>
-        <p id="level-goal"></p>
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" focusable="false">
+              <path d="M5 25h22M7 23l7-9 5 5 6-10" />
+              <circle cx="7" cy="8" r="3" />
+              <circle cx="25" cy="8" r="3" />
+            </svg>
+          </span>
+          <div>
+            <h1>Rube Goldberg Builder</h1>
+            <p class="eyebrow">A little workshop for big chain reactions</p>
+          </div>
+        </div>
+        <div class="level-card">
+          <h2 id="level-name"></h2>
+          <p id="level-goal"></p>
+        </div>
       </header>
-      <p class="instructions">Choose a part, click or drag to place it, then arrange it on the board. Press R to rotate or Delete to remove a selected part. On levels 4-6, press L to load the test solution.</p>
-      <section class="game-controls" aria-label="Game controls">
-        <div class="part-toolbar" id="part-toolbar" aria-label="Part toolbar">
-          <button type="button" draggable="true" data-part-type="ramp" aria-pressed="true">Ramp</button>
-          <button type="button" draggable="true" data-part-type="domino" aria-pressed="false">Domino</button>
-          <button type="button" draggable="true" data-part-type="seesaw" aria-pressed="false">Seesaw</button>
+      <p class="instructions">Choose a part, click or drag to place it, then arrange it on the board. Press <kbd>R</kbd> to rotate or <kbd>Delete</kbd> to remove a selected part.</p>
+      <p id="debug-solution-hint" class="instructions" hidden>Debug mode: on levels 4-6, press L to load the test solution.</p>
+      <section class="game-layout" aria-label="Game board and controls">
+        <aside class="control-panel parts-panel" aria-label="Parts and inventory">
+          <section class="part-section" aria-labelledby="parts-heading">
+            <div class="section-heading">
+              <span class="section-kicker">01</span>
+              <h2 id="parts-heading">Your parts</h2>
+            </div>
+            <div class="part-toolbar" id="part-toolbar" aria-label="Part toolbar">
+              <button type="button" draggable="true" data-part-type="ramp" aria-pressed="true">
+                <svg class="part-icon ramp-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                  <path d="M5 25h22L9 9z" />
+                </svg>
+                <span class="part-name">Ramp</span>
+                <span class="part-count" data-part-count="ramp">0</span>
+              </button>
+              <button type="button" draggable="true" data-part-type="domino" aria-pressed="false">
+                <svg class="part-icon domino-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                  <rect x="11" y="5" width="10" height="22" rx="2" />
+                  <path d="M12 16h8" />
+                </svg>
+                <span class="part-name">Domino</span>
+                <span class="part-count" data-part-count="domino">0</span>
+              </button>
+              <button type="button" draggable="true" data-part-type="seesaw" aria-pressed="false">
+                <svg class="part-icon seesaw-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                  <path d="M4 13h24L16 8zM16 14v12m-6 0h12" />
+                </svg>
+                <span class="part-name">Seesaw</span>
+                <span class="part-count" data-part-count="seesaw">0</span>
+              </button>
+            </div>
+          </section>
+          <div class="panel-divider" aria-hidden="true"></div>
+          <div class="inventory-card">
+            <span class="section-kicker">INVENTORY</span>
+            <p class="inventory-status" id="inventory-status" aria-live="polite"></p>
+          </div>
+        </aside>
+        <div class="board-column">
+          <div class="board-frame">
+            <canvas id="game-canvas" aria-label="Physics puzzle build area"></canvas>
+          </div>
+          <p class="layout-status" id="layout-status" aria-live="polite"></p>
+          <p class="game-message" id="game-message" role="status" aria-live="polite"></p>
         </div>
-        <div class="mode-controls" aria-label="Simulation controls">
-          <span id="mode-label" role="status">Edit mode</span>
-          <button id="edit-button" type="button" aria-pressed="true" disabled>Edit</button>
-          <button id="play-button" type="button" aria-pressed="false">Play</button>
-          <button id="pause-button" type="button" aria-pressed="false" disabled>Pause</button>
-          <button id="reset-button" type="button" disabled>Reset</button>
-          <button id="next-level-button" type="button" disabled>Next level</button>
-        </div>
+        <aside class="control-panel simulation-panel" aria-label="Simulation controls">
+          <section class="simulation-section">
+            <div class="section-heading">
+              <span class="section-kicker">02</span>
+              <h2>Run it</h2>
+            </div>
+            <span id="mode-label" role="status">Edit mode</span>
+            <div class="mode-controls">
+              <button id="play-button" class="primary-button" type="button" aria-pressed="false">
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m6 3 11 7-11 7z" /></svg>
+                Play
+              </button>
+              <button id="pause-button" type="button" aria-pressed="false" disabled>
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M6 4h3v12H6zm6 0h3v12h-3z" /></svg>
+                Pause
+              </button>
+              <button id="edit-button" type="button" aria-pressed="true" disabled>
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 14-.8 3.8L7 17l9.8-9.8-3-3zM12.5 5.5l3 3" /></svg>
+                Edit
+              </button>
+              <button id="reset-button" type="button" disabled>
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 9a6 6 0 1 1 1.8 4.3M4 4v5h5" /></svg>
+                Reset
+              </button>
+              <button id="sound-toggle-button" class="sound-toggle" type="button" aria-pressed="false">
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                  <path d="M3 8v4h3l4 3V5L6 8H3z" />
+                  <path class="sound-wave" d="M13 7a4 4 0 0 1 0 6m2-8a7 7 0 0 1 0 10" />
+                  <path class="mute-mark" d="m13 8 4 4m0-4-4 4" />
+                </svg>
+                <span>Sound on</span>
+              </button>
+              <button id="next-level-button" class="next-button" type="button" disabled>
+                Next level
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 10h12m-5-5 5 5-5 5" /></svg>
+              </button>
+            </div>
+          </section>
+        </aside>
       </section>
-      <p class="inventory-status" id="inventory-status" aria-live="polite"></p>
-      <p class="layout-status" id="layout-status" aria-live="polite"></p>
-      <p class="game-message" id="game-message" role="status" aria-live="polite"></p>
-      <canvas id="game-canvas" aria-label="Physics puzzle build area"></canvas>
+      <dialog id="win-dialog" class="win-dialog" role="dialog" aria-modal="true" aria-labelledby="win-title" aria-describedby="win-result">
+        <div class="win-dialog-content">
+          <div class="win-dialog-heading">
+            <div>
+              <span class="section-kicker">CHAIN REACTION COMPLETE</span>
+              <h2 id="win-title">Level complete!</h2>
+            </div>
+            <button id="win-close-icon" class="dialog-close-icon" type="button" aria-label="Close">
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m5 5 10 10M15 5 5 15" /></svg>
+            </button>
+          </div>
+          <div id="win-stars" class="win-stars" aria-hidden="true"></div>
+          <p id="win-result" class="win-result" aria-live="polite"></p>
+          <div class="win-score-details">
+            <p id="win-parts"></p>
+            <p id="win-best"></p>
+          </div>
+          <div class="win-actions">
+            <button id="win-next-button" class="primary-button" type="button">Next level</button>
+            <button id="win-replay-button" type="button">Replay</button>
+            <button id="win-close-button" type="button">Close</button>
+          </div>
+        </div>
+      </dialog>
     </main>
     <script src="./vendor/matter.min.js"></script>
     <script type="module" src="./src/main.js"></script>

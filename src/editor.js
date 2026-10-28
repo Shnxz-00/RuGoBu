@@ -23,6 +23,8 @@ export function createEditor({
   onLayoutChange,
   onInventoryChange,
   onModeChange,
+  onPartPlaced,
+  onRunStarted,
 }) {
   const layout = cloneLayout(initialLayout);
   const bodies = [];
@@ -68,11 +70,14 @@ export function createEditor({
   }
 
   function updateToolButtons() {
+    const remaining = getRemainingInventory();
     for (const button of toolButtons) {
       const selected = button.dataset.partType === activeTool;
       button.classList.toggle("is-active", selected);
       button.setAttribute("aria-pressed", String(selected));
-      button.disabled = mode !== "edit" || getRemainingInventory()[button.dataset.partType] === 0;
+      const count = remaining[button.dataset.partType];
+      button.querySelector("[data-part-count]").textContent = count;
+      button.disabled = mode !== "edit" || count === 0;
     }
   }
 
@@ -109,6 +114,7 @@ export function createEditor({
     select(bodies.length - 1);
     notifyLayoutChanged();
     updateToolButtons();
+    onPartPlaced(type);
     return bodies.length - 1;
   }
 
@@ -158,6 +164,16 @@ export function createEditor({
     removePart(engine, body);
     select(Math.min(selectedIndex, bodies.length - 1));
     notifyLayoutChanged();
+  }
+
+  function resetRun() {
+    if (playSnapshot === null) {
+      return;
+    }
+    const restoreLayout = cloneLayout(playSnapshot);
+    playSnapshot = null;
+    rebuildFromLayout(restoreLayout);
+    updateMode("edit");
   }
 
   for (const descriptor of layout) {
@@ -287,6 +303,7 @@ export function createEditor({
     if (mode === "edit") {
       playSnapshot = cloneLayout(layout);
       updateMode("play");
+      onRunStarted();
     } else if (mode === "paused") {
       updateMode("play");
     }
@@ -304,13 +321,7 @@ export function createEditor({
     }
   });
   resetButton.addEventListener("click", () => {
-    if (playSnapshot === null) {
-      return;
-    }
-    const restoreLayout = cloneLayout(playSnapshot);
-    playSnapshot = null;
-    rebuildFromLayout(restoreLayout);
-    updateMode("edit");
+    resetRun();
   });
 
   return {
@@ -318,6 +329,7 @@ export function createEditor({
     getMode: () => mode,
     getSelectedBody: () => bodies[selectedIndex] ?? null,
     getRemainingInventory,
+    reset: resetRun,
     loadLevel: (nextLayout, nextInventory) => {
       playSnapshot = null;
       inventoryLimits = { ...nextInventory };

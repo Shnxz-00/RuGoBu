@@ -1,4 +1,5 @@
 import { createEditor } from "./editor.js";
+import { SoundManager } from "./sound.js";
 import {
   FIXED_TIME_STEP_MS,
   MAX_ACCUMULATED_TIME_MS,
@@ -23,12 +24,25 @@ const editButton = document.querySelector("#edit-button");
 const playButton = document.querySelector("#play-button");
 const pauseButton = document.querySelector("#pause-button");
 const resetButton = document.querySelector("#reset-button");
+const soundToggleButton = document.querySelector("#sound-toggle-button");
 const nextLevelButton = document.querySelector("#next-level-button");
 const levelName = document.querySelector("#level-name");
 const levelGoal = document.querySelector("#level-goal");
 const inventoryStatus = document.querySelector("#inventory-status");
 const layoutStatus = document.querySelector("#layout-status");
 const gameMessage = document.querySelector("#game-message");
+const debugSolutionHint = document.querySelector("#debug-solution-hint");
+const winDialog = document.querySelector("#win-dialog");
+const winTitle = document.querySelector("#win-title");
+const winStars = document.querySelector("#win-stars");
+const winResult = document.querySelector("#win-result");
+const winParts = document.querySelector("#win-parts");
+const winBest = document.querySelector("#win-best");
+const winCloseIcon = document.querySelector("#win-close-icon");
+const winNextButton = document.querySelector("#win-next-button");
+const winReplayButton = document.querySelector("#win-replay-button");
+const winCloseButton = document.querySelector("#win-close-button");
+const debugMode = new URLSearchParams(window.location.search).has("debug");
 
 if (
   !(canvas instanceof HTMLCanvasElement)
@@ -37,15 +51,29 @@ if (
   || !(playButton instanceof HTMLButtonElement)
   || !(pauseButton instanceof HTMLButtonElement)
   || !(resetButton instanceof HTMLButtonElement)
+  || !(soundToggleButton instanceof HTMLButtonElement)
   || !(nextLevelButton instanceof HTMLButtonElement)
   || !(levelName instanceof HTMLElement)
   || !(levelGoal instanceof HTMLElement)
   || !(inventoryStatus instanceof HTMLElement)
   || !(layoutStatus instanceof HTMLElement)
   || !(gameMessage instanceof HTMLElement)
+  || !(debugSolutionHint instanceof HTMLElement)
+  || !(winDialog instanceof HTMLDialogElement)
+  || !(winTitle instanceof HTMLElement)
+  || !(winStars instanceof HTMLElement)
+  || !(winResult instanceof HTMLElement)
+  || !(winParts instanceof HTMLElement)
+  || !(winBest instanceof HTMLElement)
+  || !(winCloseIcon instanceof HTMLButtonElement)
+  || !(winNextButton instanceof HTMLButtonElement)
+  || !(winReplayButton instanceof HTMLButtonElement)
+  || !(winCloseButton instanceof HTMLButtonElement)
 ) {
-  throw new Error("The game canvas or controls could not be found.");
+  throw new Error("The game canvas, controls, or win dialog could not be found.");
 }
+
+debugSolutionHint.hidden = !debugMode;
 
 canvas.width = WORLD_WIDTH;
 canvas.height = WORLD_HEIGHT;
@@ -53,6 +81,21 @@ canvas.height = WORLD_HEIGHT;
 const context = canvas.getContext("2d");
 if (!context) {
   throw new Error("A 2D canvas context is not available.");
+}
+
+const canvasPalette = getComputedStyle(document.documentElement);
+const partColorTokens = {
+  Target: "--color-green",
+  Ramp: "--color-ramp",
+  Ground: "--color-ramp",
+  Wall: "--color-ramp",
+  Seesaw: "--color-seesaw",
+  Domino: "--color-domino",
+  Ball: "--color-ball",
+};
+
+function getPaletteColor(token) {
+  return canvasPalette.getPropertyValue(token).trim();
 }
 
 const engine = createPhysicsWorld();
@@ -63,6 +106,9 @@ let previousFrameTime;
 let accumulatedTimeMs = 0;
 let stuckTimeMs = 0;
 const BEST_STARS_STORAGE_KEY = "rugobu-best-stars-v1";
+let focusAfterWinDialog = null;
+const soundManager = new SoundManager();
+let winStarSoundTimers = [];
 
 function readBestStars() {
   try {
@@ -111,6 +157,62 @@ function scoreStars(partsUsed, par) {
   return 1;
 }
 
+function updateSoundToggle() {
+  const muted = soundManager.muted;
+  soundToggleButton.setAttribute("aria-label", muted ? "Unmute sounds" : "Mute sounds");
+  soundToggleButton.setAttribute("aria-pressed", String(muted));
+  soundToggleButton.querySelector("span").textContent = muted ? "Sound off" : "Sound on";
+}
+
+function clearWinStarSoundTimers() {
+  for (const timer of winStarSoundTimers) {
+    window.clearTimeout(timer);
+  }
+  winStarSoundTimers = [];
+}
+
+function showWinDialog({ partsUsed, par, earnedStars, bestStars }) {
+  clearWinStarSoundTimers();
+  winTitle.textContent = `Level ${LEVELS[levelIndex].id} complete!`;
+  winStars.replaceChildren();
+  for (let index = 0; index < 3; index += 1) {
+    const star = document.createElement("span");
+    const isEarned = index < earnedStars;
+    star.className = `win-star ${isEarned ? "is-earned" : "is-unearned"}`;
+    star.textContent = isEarned ? "★" : "☆";
+    star.style.setProperty("--star-index", index);
+    winStars.append(star);
+  }
+  winResult.textContent = `You earned ${earnedStars} of 3 stars.`;
+  winParts.textContent = `Parts used: ${partsUsed} / ${par} par`;
+  winBest.textContent = bestStars
+    ? `Best so far: ${formatStars(bestStars)} (${bestStars} ${bestStars === 1 ? "star" : "stars"})`
+    : "Best so far: No score yet";
+  winNextButton.disabled = levelIndex >= LEVELS.length - 1;
+
+  const activeElement = document.activeElement;
+  focusAfterWinDialog = activeElement instanceof HTMLElement
+    && activeElement !== document.body
+    && !winDialog.contains(activeElement)
+    && !activeElement.matches(":disabled")
+    ? activeElement
+    : resetButton;
+  winDialog.showModal();
+  winCloseIcon.focus();
+  winStarSoundTimers = Array.from({ length: 3 }, (_, index) => (
+    window.setTimeout(() => soundManager.play("star"), index * 300)
+  ));
+}
+
+function closeWinDialog(focusTarget) {
+  if (!winDialog.open) {
+    return;
+  }
+  clearWinStarSoundTimers();
+  focusAfterWinDialog = focusTarget ?? focusAfterWinDialog;
+  winDialog.close();
+}
+
 function updateLevelHeading() {
   const level = LEVELS[levelIndex];
   const bestStars = bestStarsByLevel[level.id];
@@ -132,6 +234,8 @@ const editor = createEditor({
   engine,
   initialLayout: layout,
   inventory: LEVELS[levelIndex].inventory,
+  onPartPlaced: (type) => soundManager.play(`place-${type}`),
+  onRunStarted: () => soundManager.play("ball-start"),
   onSelectionChange: (body) => {
     selectedBody = body;
   },
@@ -171,22 +275,16 @@ function drawBody(body) {
     context.closePath();
   }
 
-  if (body.label === "Target") {
-    context.fillStyle = "#22c55e";
-  } else if (body.label === "Ramp" || body.label === "Ground" || body.label === "Wall") {
-    context.fillStyle = "#475569";
-  } else if (body.label === "Seesaw") {
-    context.fillStyle = "#3b82f6";
-  } else if (body.label === "Domino") {
-    context.fillStyle = "#ef4444";
-  } else {
-    context.fillStyle = "#f59e0b";
-  }
+  context.fillStyle = getPaletteColor(partColorTokens[body.label] ?? "--color-ball");
+  context.shadowColor = getPaletteColor("--color-part-shadow");
+  context.shadowBlur = 8;
   context.fill();
+  context.shadowColor = getPaletteColor("--color-transparent");
+  context.shadowBlur = 0;
 
   if (body === selectedBody) {
-    context.lineWidth = 3;
-    context.strokeStyle = "#0f172a";
+    context.lineWidth = 4;
+    context.strokeStyle = getPaletteColor("--color-selection");
     context.stroke();
   }
 }
@@ -201,7 +299,7 @@ function drawWorld() {
   for (const constraint of getConstraints(engine)) {
     context.beginPath();
     context.arc(constraint.pointB.x, constraint.pointB.y, 5, 0, Math.PI * 2);
-    context.fillStyle = "#1e293b";
+    context.fillStyle = getPaletteColor("--color-constraint");
     context.fill();
   }
 }
@@ -223,11 +321,12 @@ function completeLevel() {
   }
 
   editor.setWon();
-  const completionMessage = levelIndex < LEVELS.length - 1
-    ? "You did it! The ball reached the target. Continue to the next level."
-    : `You did it! You completed all ${LEVELS.length} levels.`;
-  const earnedStarLabel = `${formatStars(earnedStars)} (${earnedStars} ${earnedStars === 1 ? "star" : "stars"})`;
-  gameMessage.textContent = `${completionMessage} You earned ${earnedStarLabel}.`;
+  showWinDialog({
+    partsUsed,
+    par: LEVELS[levelIndex].par,
+    earnedStars,
+    bestStars: bestStarsByLevel[LEVELS[levelIndex].id] ?? earnedStars,
+  });
 }
 
 function endRun(message) {
@@ -280,7 +379,7 @@ function loadNextLevel() {
 }
 
 window.addEventListener("keydown", (event) => {
-  if (event.code !== "KeyL" || editor.getMode() !== "edit") {
+  if (!debugMode || event.code !== "KeyL" || editor.getMode() !== "edit") {
     return;
   }
   const level = LEVELS[levelIndex];
@@ -293,6 +392,34 @@ window.addEventListener("keydown", (event) => {
 });
 
 nextLevelButton.addEventListener("click", loadNextLevel);
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && winDialog.open) {
+    event.preventDefault();
+    closeWinDialog();
+  }
+});
+winCloseIcon.addEventListener("click", () => closeWinDialog());
+winCloseButton.addEventListener("click", () => closeWinDialog());
+winNextButton.addEventListener("click", () => {
+  closeWinDialog(playButton);
+  loadNextLevel();
+});
+winReplayButton.addEventListener("click", () => {
+  closeWinDialog(playButton);
+  editor.reset();
+});
+winDialog.addEventListener("close", () => {
+  clearWinStarSoundTimers();
+  if (focusAfterWinDialog?.isConnected && !focusAfterWinDialog.matches(":disabled")) {
+    focusAfterWinDialog.focus();
+  }
+  focusAfterWinDialog = null;
+});
+soundToggleButton.addEventListener("click", () => {
+  soundManager.toggleMute();
+  updateSoundToggle();
+});
+updateSoundToggle();
 onBallTargetCollision(engine, completeLevel);
 
 function frame(timestampMs) {
