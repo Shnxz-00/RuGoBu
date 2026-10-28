@@ -10,7 +10,7 @@ A browser-based physics puzzle: arrange ramps, dominoes, and seesaws to guide a 
 
 1. Read the goal and remaining part counts for the level.
 2. Select a part, then click or drag on the board to place it. Drag placed parts to move them.
-3. Select a part and press **R** to rotate it, or **Delete** to remove it.
+3. Use **Grid snap** or press **G** to toggle snapping. Select a part and use **R** / **Shift+R** or the on-screen rotate buttons to rotate clockwise / counter-clockwise in 15° steps. **Delete** removes the selected part.
 4. Press **Play** to run the simulation. **Pause** freezes it; **Play** resumes.
 5. Press **Edit** to stop the run and adjust the layout. **Reset** rebuilds the layout saved when the run started.
 6. Get the ball into the green target to complete the level and earn stars based on parts used versus the level's par. If the ball leaves the board or the chain reaction stops, reset and try another layout.
@@ -23,6 +23,7 @@ The board adapts to the screen size. Touch gameplay is not currently supported.
 - Six hand-built levels, each with a goal and limited part inventory.
 - Edit, Play, Pause, and Reset modes, with win and stuck detection.
 - Ramps, dominoes, and pivoted seesaws, plus fixed level obstacles and a target sensor.
+- Optional 20-unit grid snapping (toggle with **G**) and clockwise / counter-clockwise 15° rotation by key or button. Dragging and placement keep parts within the board.
 - Earn 3 stars at or below par, 2 stars up to two parts over par, or 1 star otherwise. Best stars appear next to the level name and save in browser storage when available.
 - Winning opens an accessible star-results dialog with parts-used/par, best score, Replay, and level navigation.
 - Synthesized Web Audio effects respond to part placement, starting a run, and earned stars. The sound toggle remembers its state when browser storage is available.
@@ -48,6 +49,7 @@ assets/sounds/             Local WAV overrides for synthesized effects
 src/
   config.js                World dimensions and simulation thresholds
   editor.js                Placement, selection, inventory, and modes
+  config.js                World bounds, grid size, rotation step, simulation thresholds
   levels.js                Level definitions and initial layouts
   main.js                  Rendering, game loop, and level flow
   parts.js                 Physics part factories

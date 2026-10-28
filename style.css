@@ -420,6 +420,92 @@ canvas:active {
   font-size: 0.85rem;
 }
 
+.build-tools {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.snap-toggle,
+.rotate-button {
+  display: flex;
+  min-height: 2.45rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-panel-control);
+  color: var(--color-text);
+  cursor: pointer;
+  font: 600 0.9rem var(--font-display);
+}
+
+.snap-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0.4rem 0.6rem;
+}
+
+.snap-toggle[aria-pressed="true"] {
+  border-color: var(--color-teal-border);
+  background: var(--color-control-active);
+  color: var(--color-teal);
+}
+
+.snap-toggle svg,
+.rotate-button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.snap-toggle span {
+  flex: 1;
+  text-align: left;
+}
+
+.snap-toggle kbd {
+  color: inherit;
+}
+
+.rotation-tools {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rotate-button {
+  min-width: 3.75rem;
+  padding: 0.35rem;
+}
+
+.selected-angle {
+  min-width: 0;
+  color: var(--color-teal);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.snap-toggle:hover:not(:disabled),
+.rotate-button:hover:not(:disabled) {
+  border-color: var(--color-teal);
+  background: var(--color-control-hover);
+}
+
+.snap-toggle:disabled,
+.rotate-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .mode-controls {
   display: grid;
   grid-template-columns: 1fr 1fr;

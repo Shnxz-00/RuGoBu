@@ -27,7 +27,7 @@
           <p id="level-goal"></p>
         </div>
       </header>
-      <p class="instructions">Choose a part, click or drag to place it, then arrange it on the board. Press <kbd>R</kbd> to rotate or <kbd>Delete</kbd> to remove a selected part.</p>
+      <p class="instructions">Choose a part, click or drag to place it, then arrange it on the board. Press <kbd>G</kbd> to toggle grid snap, <kbd>R</kbd> to rotate clockwise, <kbd>Shift</kbd>+<kbd>R</kbd> to rotate counter-clockwise, or <kbd>Delete</kbd> to remove a selected part.</p>
       <p id="debug-solution-hint" class="instructions" hidden>Debug mode: on levels 4-6, press L to load the test solution.</p>
       <section class="game-layout" aria-label="Game board and controls">
         <aside class="control-panel parts-panel" aria-label="Parts and inventory">
@@ -81,6 +81,26 @@
               <h2>Run it</h2>
             </div>
             <span id="mode-label" role="status">Edit mode</span>
+            <section class="build-tools" aria-label="Build tools">
+              <button id="snap-toggle-button" class="snap-toggle" type="button" aria-pressed="true">
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                  <path d="M3 3h14v14H3zM8 3v14m5-14v14M3 8h14m-14 5h14" />
+                </svg>
+                <span id="snap-toggle-label">Grid snap: on</span>
+                <kbd>G</kbd>
+              </button>
+              <div class="rotation-tools" aria-label="Selected part rotation">
+                <button id="rotate-counterclockwise-button" class="rotate-button" type="button" aria-label="Rotate selected part counter-clockwise" title="Rotate counter-clockwise (Shift+R)" disabled>
+                  <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 8a6 6 0 1 1 1.8 5m-2.8-9v5h5" /></svg>
+                  <span>−15°</span>
+                </button>
+                <output id="selected-angle" class="selected-angle" aria-live="polite">No part selected</output>
+                <button id="rotate-clockwise-button" class="rotate-button" type="button" aria-label="Rotate selected part clockwise" title="Rotate clockwise (R)" disabled>
+                  <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M16 8a6 6 0 1 0-1.8 5m2.8-9v5h-5" /></svg>
+                  <span>+15°</span>
+                </button>
+              </div>
+            </section>
             <div class="mode-controls">
               <button id="play-button" class="primary-button" type="button" aria-pressed="false">
                 <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m6 3 11 7-11 7z" /></svg>

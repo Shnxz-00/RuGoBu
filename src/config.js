@@ -1,6 +1,8 @@
 // Shared canvas dimensions and physics bounds for the fixed world.
 export const WORLD_WIDTH = 960;
 export const WORLD_HEIGHT = 540;
+export const GRID_SIZE = 20;
+export const ROTATION_STEP_DEGREES = 15;
 
 // Physics advances in fixed steps; excess lag is capped to avoid a long catch-up after tab suspension.
 export const FIXED_TIME_STEP_MS = 1000 / 60;

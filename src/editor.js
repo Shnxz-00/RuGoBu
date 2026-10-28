@@ -6,6 +6,12 @@ import {
   setPartTransform,
   stopBodies,
 } from "./physics.js";
+import {
+  GRID_SIZE,
+  ROTATION_STEP_DEGREES,
+  WORLD_HEIGHT,
+  WORLD_WIDTH,
+} from "./config.js";
 import { createPart } from "./parts.js";
 
 const TOOLBAR_PARTS = ["ramp", "domino", "seesaw"];
@@ -34,11 +40,17 @@ export function createEditor({
   const pauseButton = document.querySelector("#pause-button");
   const editButton = document.querySelector("#edit-button");
   const resetButton = document.querySelector("#reset-button");
+  const snapToggleButton = document.querySelector("#snap-toggle-button");
+  const snapToggleLabel = document.querySelector("#snap-toggle-label");
+  const rotateCounterClockwiseButton = document.querySelector("#rotate-counterclockwise-button");
+  const rotateClockwiseButton = document.querySelector("#rotate-clockwise-button");
+  const selectedAngleLabel = document.querySelector("#selected-angle");
   let activeTool = "ramp";
   let selectedIndex = -1;
   let mode = "edit";
   let drag = null;
   let playSnapshot = null;
+  let gridSnappingEnabled = true;
   let inventoryLimits = { ...inventory };
 
   if (
@@ -47,6 +59,11 @@ export function createEditor({
     || !(pauseButton instanceof HTMLButtonElement)
     || !(editButton instanceof HTMLButtonElement)
     || !(resetButton instanceof HTMLButtonElement)
+    || !(snapToggleButton instanceof HTMLButtonElement)
+    || !(snapToggleLabel instanceof HTMLElement)
+    || !(rotateCounterClockwiseButton instanceof HTMLButtonElement)
+    || !(rotateClockwiseButton instanceof HTMLButtonElement)
+    || !(selectedAngleLabel instanceof HTMLElement)
   ) {
     throw new Error("Editor controls could not be found.");
   }
@@ -59,6 +76,66 @@ export function createEditor({
     };
   }
 
+  function getPositionLimits(body, angle) {
+    const angleDelta = angle - body.angle;
+    const cos = Math.cos(angleDelta);
+    const sin = Math.sin(angleDelta);
+    const offsets = body.vertices.map((vertex) => {
+      const offsetX = vertex.x - body.position.x;
+      const offsetY = vertex.y - body.position.y;
+      return {
+        x: offsetX * cos - offsetY * sin,
+        y: offsetX * sin + offsetY * cos,
+      };
+    });
+    const minOffsetX = Math.min(...offsets.map(({ x }) => x));
+    const maxOffsetX = Math.max(...offsets.map(({ x }) => x));
+    const minOffsetY = Math.min(...offsets.map(({ y }) => y));
+    const maxOffsetY = Math.max(...offsets.map(({ y }) => y));
+    return {
+      minX: -minOffsetX,
+      maxX: WORLD_WIDTH - maxOffsetX,
+      minY: -minOffsetY,
+      maxY: WORLD_HEIGHT - maxOffsetY,
+    };
+  }
+
+  function constrainPosition(body, x, y, angle) {
+    const limits = getPositionLimits(body, angle);
+    if (gridSnappingEnabled) {
+      const minGridX = Math.ceil(limits.minX / GRID_SIZE);
+      const maxGridX = Math.floor(limits.maxX / GRID_SIZE);
+      const minGridY = Math.ceil(limits.minY / GRID_SIZE);
+      const maxGridY = Math.floor(limits.maxY / GRID_SIZE);
+      return {
+        x: Math.min(maxGridX, Math.max(minGridX, Math.round(x / GRID_SIZE))) * GRID_SIZE,
+        y: Math.min(maxGridY, Math.max(minGridY, Math.round(y / GRID_SIZE))) * GRID_SIZE,
+      };
+    }
+
+    return {
+      x: Math.min(limits.maxX, Math.max(limits.minX, x)),
+      y: Math.min(limits.maxY, Math.max(limits.minY, y)),
+    };
+  }
+
+  function formatAngle(angle) {
+    const degrees = Math.round(angle * 180 / Math.PI);
+    return `${((degrees % 360) + 360) % 360}°`;
+  }
+
+  function updateBuildControls() {
+    snapToggleButton.setAttribute("aria-pressed", String(gridSnappingEnabled));
+    snapToggleLabel.textContent = `Grid snap: ${gridSnappingEnabled ? "on" : "off"}`;
+    snapToggleButton.disabled = mode !== "edit";
+    const hasSelection = mode === "edit" && selectedIndex >= 0;
+    rotateCounterClockwiseButton.disabled = !hasSelection;
+    rotateClockwiseButton.disabled = !hasSelection;
+    selectedAngleLabel.textContent = hasSelection
+      ? `Angle: ${formatAngle(layout[selectedIndex].angle)}`
+      : "No part selected";
+  }
+
   function notifyLayoutChanged() {
     onLayoutChange(cloneLayout(layout));
     onInventoryChange(getRemainingInventory());
@@ -66,7 +143,9 @@ export function createEditor({
 
   function select(index) {
     selectedIndex = index;
-    onSelectionChange(bodies[selectedIndex] ?? null);
+    const body = bodies[selectedIndex] ?? null;
+    onSelectionChange(body, body ? formatAngle(layout[selectedIndex].angle) : null);
+    updateBuildControls();
   }
 
   function updateToolButtons() {
@@ -96,6 +175,7 @@ export function createEditor({
     toolbar.dataset.mode = mode;
     canvas.dataset.mode = mode;
     updateToolButtons();
+    updateBuildControls();
     editButton.disabled = mode === "edit" || mode === "won" || mode === "stuck";
     playButton.disabled = mode === "play" || mode === "won" || mode === "stuck";
     pauseButton.disabled = mode !== "play";
@@ -107,8 +187,11 @@ export function createEditor({
     if ((getRemainingInventory()[type] ?? 0) < 1) {
       return -1;
     }
-    const descriptor = { type, x, y, angle: 0 };
-    const body = addPart(engine, createPart(type, x, y, descriptor.angle));
+    const angle = 0;
+    const body = addPart(engine, createPart(type, x, y, angle));
+    const position = constrainPosition(body, x, y, angle);
+    setPartTransform(engine, body, position.x, position.y, angle);
+    const descriptor = { type, ...position, angle };
     layout.push(descriptor);
     bodies.push(body);
     select(bodies.length - 1);
@@ -174,6 +257,26 @@ export function createEditor({
     playSnapshot = null;
     rebuildFromLayout(restoreLayout);
     updateMode("edit");
+  }
+
+  function rotateSelected(direction) {
+    if (mode !== "edit" || selectedIndex < 0) {
+      return;
+    }
+    const descriptor = layout[selectedIndex];
+    const angle = descriptor.angle + direction * ROTATION_STEP_DEGREES * Math.PI / 180;
+    const position = constrainPosition(bodies[selectedIndex], descriptor.x, descriptor.y, angle);
+    descriptor.angle = angle;
+    descriptor.x = position.x;
+    descriptor.y = position.y;
+    setPartTransform(engine, bodies[selectedIndex], position.x, position.y, angle);
+    select(selectedIndex);
+    notifyLayoutChanged();
+  }
+
+  function toggleGridSnapping() {
+    gridSnappingEnabled = !gridSnappingEnabled;
+    updateBuildControls();
   }
 
   for (const descriptor of layout) {
@@ -268,9 +371,10 @@ export function createEditor({
     const body = bodies[selectedIndex];
     const x = point.x + drag.offsetX;
     const y = point.y + drag.offsetY;
-    setPartTransform(engine, body, x, y, layout[selectedIndex].angle);
-    layout[selectedIndex].x = x;
-    layout[selectedIndex].y = y;
+    const position = constrainPosition(body, x, y, layout[selectedIndex].angle);
+    setPartTransform(engine, body, position.x, position.y, layout[selectedIndex].angle);
+    layout[selectedIndex].x = position.x;
+    layout[selectedIndex].y = position.y;
     notifyLayoutChanged();
   });
 
@@ -287,12 +391,14 @@ export function createEditor({
     if (mode !== "edit") {
       return;
     }
+    if (event.code === "KeyG") {
+      event.preventDefault();
+      toggleGridSnapping();
+      return;
+    }
     if (event.code === "KeyR" && selectedIndex >= 0) {
       event.preventDefault();
-      const descriptor = layout[selectedIndex];
-      descriptor.angle += Math.PI / 12;
-      setPartTransform(engine, bodies[selectedIndex], descriptor.x, descriptor.y, descriptor.angle);
-      notifyLayoutChanged();
+      rotateSelected(event.shiftKey ? -1 : 1);
     } else if (event.code === "Delete") {
       event.preventDefault();
       removeSelected();
@@ -323,6 +429,9 @@ export function createEditor({
   resetButton.addEventListener("click", () => {
     resetRun();
   });
+  snapToggleButton.addEventListener("click", toggleGridSnapping);
+  rotateCounterClockwiseButton.addEventListener("click", () => rotateSelected(-1));
+  rotateClockwiseButton.addEventListener("click", () => rotateSelected(1));
 
   return {
     getLayout: () => cloneLayout(layout),

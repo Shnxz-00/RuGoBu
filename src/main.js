@@ -25,6 +25,7 @@ const playButton = document.querySelector("#play-button");
 const pauseButton = document.querySelector("#pause-button");
 const resetButton = document.querySelector("#reset-button");
 const soundToggleButton = document.querySelector("#sound-toggle-button");
+const selectedAngleLabel = document.querySelector("#selected-angle");
 const nextLevelButton = document.querySelector("#next-level-button");
 const levelName = document.querySelector("#level-name");
 const levelGoal = document.querySelector("#level-goal");
@@ -52,6 +53,7 @@ if (
   || !(pauseButton instanceof HTMLButtonElement)
   || !(resetButton instanceof HTMLButtonElement)
   || !(soundToggleButton instanceof HTMLButtonElement)
+  || !(selectedAngleLabel instanceof HTMLOutputElement)
   || !(nextLevelButton instanceof HTMLButtonElement)
   || !(levelName instanceof HTMLElement)
   || !(levelGoal instanceof HTMLElement)
@@ -236,8 +238,9 @@ const editor = createEditor({
   inventory: LEVELS[levelIndex].inventory,
   onPartPlaced: (type) => soundManager.play(`place-${type}`),
   onRunStarted: () => soundManager.play("ball-start"),
-  onSelectionChange: (body) => {
+  onSelectionChange: (body, angle) => {
     selectedBody = body;
+    selectedAngleLabel.textContent = angle ? `Angle: ${angle}` : "No part selected";
   },
   onLayoutChange: (nextLayout) => {
     layout = nextLayout;
@@ -283,9 +286,13 @@ function drawBody(body) {
   context.shadowBlur = 0;
 
   if (body === selectedBody) {
-    context.lineWidth = 4;
+    context.lineWidth = 6;
     context.strokeStyle = getPaletteColor("--color-selection");
+    context.shadowColor = getPaletteColor("--color-selection");
+    context.shadowBlur = 12;
     context.stroke();
+    context.shadowColor = getPaletteColor("--color-transparent");
+    context.shadowBlur = 0;
   }
 }
 
