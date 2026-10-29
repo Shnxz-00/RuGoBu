@@ -89,7 +89,7 @@ const canvasPalette = getComputedStyle(document.documentElement);
 const partColorTokens = {
   Target: "--color-green",
   Ramp: "--color-ramp",
-  Ground: "--color-ramp",
+  Ground: "--color-background",
   Wall: "--color-ramp",
   Seesaw: "--color-seesaw",
   Domino: "--color-domino",
