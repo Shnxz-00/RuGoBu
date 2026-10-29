@@ -89,7 +89,6 @@ const canvasPalette = getComputedStyle(document.documentElement);
 const partColorTokens = {
   Target: "--color-green",
   Ramp: "--color-ramp",
-  Ground: "--color-background",
   Wall: "--color-ramp",
   Seesaw: "--color-seesaw",
   Domino: "--color-domino",
@@ -98,6 +97,14 @@ const partColorTokens = {
 
 function getPaletteColor(token) {
   return canvasPalette.getPropertyValue(token).trim();
+}
+
+function getBodyColorToken(body) {
+  // The floor is a wall body that touches the bottom of the physics world.
+  if (body.label === "Wall" && body.bounds.max.y >= WORLD_HEIGHT) {
+    return "--color-background";
+  }
+  return partColorTokens[body.label] ?? "--color-ball";
 }
 
 const engine = createPhysicsWorld();
@@ -278,7 +285,7 @@ function drawBody(body) {
     context.closePath();
   }
 
-  context.fillStyle = getPaletteColor(partColorTokens[body.label] ?? "--color-ball");
+  context.fillStyle = getPaletteColor(getBodyColorToken(body));
   context.shadowColor = getPaletteColor("--color-part-shadow");
   context.shadowBlur = 8;
   context.fill();
